@@ -7,18 +7,18 @@ MOCK_VIDEOS = [
     Video(
         video_id=1,
         title="Intro to Cloud Computing",
-        course_id="CS5356",
+        course_id="COMS W4153",
         course_name="Cloud Computing",
-        prof_name="Prof. Ferguson",
+        prof_name="Donald Ferguson",
         uploaded_at=datetime(2025, 9, 20, 10, 0),
         gcs_path="gs://videos/cs5356/lecture1.mp4"
     ),
     Video(
         video_id=2,
         title="Kubernetes Basics",
-        course_id="CS5356",
+        course_id="COMS W4153",
         course_name="Cloud Computing",
-        prof_name="Prof. Ferguson",
+        prof_name="Donald Ferguson",
         uploaded_at=datetime(2025, 9, 22, 10, 0),
         gcs_path="gs://videos/cs5356/lecture2.mp4"
     )
