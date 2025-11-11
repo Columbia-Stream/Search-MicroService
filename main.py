@@ -1,26 +1,29 @@
-# source venv/bin/activate
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import sys, os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
 from resources.search_resource import router as search_router
+from dotenv import load_dotenv
+import os
 
-# Initialize FastAPI app
-app = FastAPI(title="Search Service", version="0.2.0")
+env_path = os.path.join(os.path.dirname(__file__), ".env")
+load_dotenv(dotenv_path=env_path)
 
-# Allow frontend (React) to call FastAPI (CORS setup)
+app = FastAPI(title="Search Service", version="2.0.0")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # Relaxed for local dev
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+app.include_router(search_router)
+
 @app.get("/")
 def root():
-    return {"message": "Search Service running via DBService"}
+    return {"message": "Search Service is running"}
 
-# Register search routes
-app.include_router(search_router, prefix="/api")
+@app.get("/healthz")
+def health():
+    return {"ok": True}
+
