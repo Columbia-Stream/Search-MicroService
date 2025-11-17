@@ -2,7 +2,7 @@
 
 import pytest
 from fastapi.testclient import TestClient
-from main import app
+from video_composite_service.main import app
 
 client = TestClient(app)
 
