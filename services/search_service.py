@@ -5,22 +5,30 @@ import hashlib
 import json
 from fastapi import HTTPException, Response
 
-VIDEOS_COMPOSITE_URL = os.getenv("VIDEOS_COMPOSITE_URL", "http://127.0.0.1:8082")
+VIDEOS_COMPOSITE_URL = os.getenv("VIDEOS_COMPOSITE_URL", "http://34.44.10.169:8082")
 
 
-def search_videos(q=None, course_id=None, prof=None,
-                  limit=20, offset=0,
-                  authorization=None,
-                  if_none_match=None):
+def search_videos(
+    q=None,
+    course_id=None,
+    offering_id=None,         # <-- ADDED HERE
+    prof=None,
+    limit=20,
+    offset=0,
+    authorization=None,
+    if_none_match=None
+):
     """
     Delegates search to Videos Composite Microservice.
     Implements ETag caching behavior.
+    Now supports offering_id.
     """
 
-    # Build clean params list (remove None)
+    # Build params (include offering_id if provided)
     params = {
         "q": q,
         "course_id": course_id,
+        "offering_id": offering_id,   # <-- ADDED
         "prof": prof,
         "limit": limit,
         "offset": offset,
@@ -29,7 +37,7 @@ def search_videos(q=None, course_id=None, prof=None,
 
     headers = {"Authorization": authorization} if authorization else {}
 
-    # ---- Call Video Composite ----
+    # ---- Call Videos Composite ----
     try:
         res = requests.get(
             f"{VIDEOS_COMPOSITE_URL}/videos",
@@ -51,9 +59,8 @@ def search_videos(q=None, course_id=None, prof=None,
     items_json = json.dumps(data.get("items", []), sort_keys=True).encode("utf-8")
     etag = hashlib.sha256(items_json).hexdigest()
 
-    # ---- Handle conditional GET (If-None-Match) ----
+    # ---- Handle conditional GET ----
     if if_none_match == etag:
-        # Return 304 with no body
         return Response(status_code=304)
 
     # ---- Add Search MS self link ----
@@ -63,6 +70,7 @@ def search_videos(q=None, course_id=None, prof=None,
             f"/search/videos?"
             f"q={q or ''}&"
             f"course_id={course_id or ''}&"
+            f"offering_id={offering_id or ''}&"   # <-- ADDED
             f"prof={prof or ''}&"
             f"limit={limit}&offset={offset}"
         )
@@ -75,3 +83,4 @@ def search_videos(q=None, course_id=None, prof=None,
     )
     response.headers["ETag"] = etag
     return response
+
