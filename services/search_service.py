@@ -1,4 +1,3 @@
-# services/search_service.py
 import requests
 import os
 import hashlib
@@ -7,37 +6,39 @@ from fastapi import HTTPException, Response
 
 VIDEOS_COMPOSITE_URL = os.getenv("VIDEOS_COMPOSITE_URL", "http://34.44.10.169:8082")
 
-
 def search_videos(
     q=None,
     course_id=None,
-    offering_id=None,         # <-- ADDED HERE
+    offering_id=None,
     prof=None,
+    year=None,              # NEW
+    semester=None,          # NEW
     limit=20,
     offset=0,
     authorization=None,
     if_none_match=None
 ):
     """
-    Delegates search to Videos Composite Microservice.
-    Implements ETag caching behavior.
-    Now supports offering_id.
+    Delegates search to Videos Composite.
+    Includes year + semester.
     """
 
-    # Build params (include offering_id if provided)
     params = {
         "q": q,
         "course_id": course_id,
-        "offering_id": offering_id,   # <-- ADDED
+        "offering_id": offering_id,
         "prof": prof,
+        "year": year,           # NEW
+        "semester": semester,   # NEW
         "limit": limit,
         "offset": offset,
     }
+
     params = {k: v for k, v in params.items() if v is not None}
 
-    headers = {"Authorization": authorization} if authorization else {}
+    headers = {"Authorization": authorization}
 
-    # ---- Call Videos Composite ----
+    # Call Composite
     try:
         res = requests.get(
             f"{VIDEOS_COMPOSITE_URL}/videos",
@@ -55,32 +56,31 @@ def search_videos(
 
     data = res.json()
 
-    # ---- Compute ETag using hash of items ----
+    # Compute ETag
     items_json = json.dumps(data.get("items", []), sort_keys=True).encode("utf-8")
     etag = hashlib.sha256(items_json).hexdigest()
 
-    # ---- Handle conditional GET ----
     if if_none_match == etag:
         return Response(status_code=304)
 
-    # ---- Add Search MS self link ----
+    # Add HATEOAS link
     data["links"].append({
         "rel": "self",
         "href": (
             f"/search/videos?"
             f"q={q or ''}&"
             f"course_id={course_id or ''}&"
-            f"offering_id={offering_id or ''}&"   # <-- ADDED
+            f"offering_id={offering_id or ''}&"
             f"prof={prof or ''}&"
+            f"year={year or ''}&"
+            f"semester={semester or ''}&"
             f"limit={limit}&offset={offset}"
         )
     })
 
-    # ---- Return response with ETag header ----
     response = Response(
         content=json.dumps(data),
         media_type="application/json"
     )
     response.headers["ETag"] = etag
     return response
-
